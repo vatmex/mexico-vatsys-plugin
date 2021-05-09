@@ -80,11 +80,10 @@ namespace MMFRVatsys.CustomLabels
         private bool isSSRCodeValid(FDP2.FDR flightDataRecord, NetworkPilot actualAircraft)
         {
             // Allow Non-Discrete codes
-            if (actualAircraft.TransponderCode == 1200) return true;
-            if (actualAircraft.TransponderCode == 2000) return true;
-            if (actualAircraft.TransponderCode == 3000) return true;
-            if (actualAircraft.TransponderCode == 7600) return true;
-            if (actualAircraft.TransponderCode == 7700) return true;
+            if (actualAircraft.TransponderCode == 0640) return true; // 1200
+            if (actualAircraft.TransponderCode == 1024) return true; // 2000
+            if (actualAircraft.TransponderCode == 3968) return true; // 7600
+            if (actualAircraft.TransponderCode == 4032) return true; // 7700
 
             if (actualAircraft.TransponderCode != flightDataRecord.AssignedSSRCode) return false;
 

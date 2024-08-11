@@ -5,29 +5,31 @@ using System.Text;
 using System.ComponentModel.Composition;
 using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
-
 using vatsys;
 using vatsys.Plugin;
+// ReSharper disable InconsistentNaming
 
-namespace MMFRVatsys.CustomLabels
+namespace Vatmex.Vatsys.Plugins.CustomLabels
 {
     [Export(typeof(IPlugin))]
-    public class SquawkLabelItem : IPlugin
+    public class SquawkValidationLabelItem : IPlugin
     {
-        /// The name of the custom label item we've added to Labels.xml in the Profile
-        const string LABEL_ITEM = "LABEL_ITEM_DUPE";
-        /// Dictionary to store the value we will retrieve when the label is painted. This avoids re-doing processing of the FDR every time the paint code is called. 
-        ConcurrentDictionary<string, bool> ssrCodeValues = new ConcurrentDictionary<string, bool>();
+        // Plugin Name
+        public string Name => "Vatmex Squawk Validation";
 
-        /// Plugin Name
-        public string Name { get => "MMFR Squawk Validation"; }
+        // The name of the custom label item we've added to Labels.xml in the Profile
+        // ReSharper disable once InconsistentNaming
+        const string LABEL_ITEM = "LABEL_ITEM_DUPE";
+
+        // Dictionary to store the value we will retrieve when the label is painted. This avoids re-doing processing of the FDR every time the paint code is called. 
+        private readonly ConcurrentDictionary<string, bool> ssrCodeValues = new ConcurrentDictionary<string, bool>();
 
         // Not needed for this plugin.
         public void OnFDRUpdate(FDP2.FDR updated) { }
 
         public void OnRadarTrackUpdate(RDP.RadarTrack updated)
         {
-            // Prevents some errors while the coupling ocours.
+            // Prevents some errors while the coupling occurs.
             if (updated.CoupledFDR == null)
                 return;
 
@@ -38,7 +40,7 @@ namespace MMFRVatsys.CustomLabels
             }
             else
             {
-                bool codeValidity = this.isSSRCodeValid(updated.CoupledFDR, updated.ActualAircraft);
+                bool codeValidity = IsSsrCodeValid(updated.CoupledFDR, updated.ActualAircraft);
                 ssrCodeValues.AddOrUpdate(updated.CoupledFDR.Callsign, codeValidity, (k, v) => codeValidity);
             }
         }
@@ -77,17 +79,24 @@ namespace MMFRVatsys.CustomLabels
             return null;
         }
 
-        private bool isSSRCodeValid(FDP2.FDR flightDataRecord, NetworkPilot actualAircraft)
+        private static bool IsSsrCodeValid(FDP2.FDR flightDataRecord, NetworkPilot actualAircraft)
         {
             // Allow Non-Discrete codes
-            if (actualAircraft.TransponderCode == 0640) return true; // 1200
-            if (actualAircraft.TransponderCode == 1024) return true; // 2000
-            if (actualAircraft.TransponderCode == 3968) return true; // 7600
-            if (actualAircraft.TransponderCode == 4032) return true; // 7700
+            switch (actualAircraft.TransponderCode)
+            {
+                case 0640: // 1200
+                    return true;
+                case 0832: // 1500
+                    return true;
+                case 1024: // 2000
+                    return true;
+                case 3968: // 7600
+                    return true;
+                case 4032: // 7700
+                    return true; 
+            }
 
-            if (actualAircraft.TransponderCode != flightDataRecord.AssignedSSRCode) return false;
-
-            return true;
+            return actualAircraft.TransponderCode == flightDataRecord.AssignedSSRCode;
         }
     }
 }

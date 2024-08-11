@@ -5,27 +5,31 @@ using System.Text;
 using System.ComponentModel.Composition;
 using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
-
 using vatsys;
 using vatsys.Plugin;
 
-namespace MMFRVatsys.CustomLabels
+// ReSharper disable All
+#pragma warning disable IDE0060
+
+namespace Vatmex.Vatsys.Plugins.RNPCaps
 {
     [Export(typeof(IPlugin))]
-    public class RnvCapLabelItem : IPlugin
+    public class RnpCapLabelItem : IPlugin
     {
-        /// The name of the custom label item we've added to Labels.xml in the Profile
-        const string LABEL_ITEM = "LABEL_ITEM_RNVCAP";
-        /// Dictionary to store the value we will retrieve when the label is painted. This avoids re-doing processing of the FDR every time the paint code is called. 
-        ConcurrentDictionary<string, char> pbnValues = new ConcurrentDictionary<string, char>();
+        // Plugin Name
+        public string Name => "Vatmex RNP Capabilities Check";
 
-        /// Plugin Name
-        public string Name { get => "MMFR RNVCAP"; }
+        // Label name in Sector File
+        // ReSharper disable once InconsistentNaming
+        private const string LABEL_ITEM = "LABEL_ITEM_RNVCAP";
+
+        // Dictionary to store the value we will retrieve when the label is painted. This avoids re-doing processing of the FDR every time the paint code is called. 
+        private readonly ConcurrentDictionary<string, char> _pbnValues = new ConcurrentDictionary<string, char>();
 
         public void OnFDRUpdate(FDP2.FDR updated) 
         {
             if (FDP2.GetFDRIndex(updated.Callsign) == -1)
-                pbnValues.TryRemove(updated.Callsign, out _);
+                _pbnValues.TryRemove(updated.Callsign, out _);
             else
             {
                 Match pbn = Regex.Match(updated.Remarks, @"PBN\/\w+\s");
@@ -47,7 +51,7 @@ namespace MMFRVatsys.CustomLabels
                 else if (rnp10)
                     cap = '\0';
 
-                pbnValues.AddOrUpdate(updated.Callsign, cap, (k, v) => cap);
+                _pbnValues.AddOrUpdate(updated.Callsign, cap, (k, v) => cap);
             }
         }
 
@@ -56,17 +60,15 @@ namespace MMFRVatsys.CustomLabels
 
         /// First we check if the itemType is our custom Label Item, and a flight data record exists (since we need a callsign) 
         /// Then we get the previously calculated character from our dictionary and display it by returning a custom label item.
-        /// Note we change the items colour from the default colour if it is a 'Z' char.
+        /// Note we change the items color from the default color if it is a 'Z' char.
         public CustomLabelItem GetCustomLabelItem(string itemType, Track track, FDP2.FDR flightDataRecord, RDP.RadarTrack radarTrack)
         {
-            if (flightDataRecord == null)
-                return null;
+            if (flightDataRecord == null) return null;
 
-            if (itemType != LABEL_ITEM)
-                return null;
+            if (itemType != LABEL_ITEM) return null;
 
             char val = 'P';
-            pbnValues.TryGetValue(flightDataRecord.Callsign, out val);
+            _pbnValues.TryGetValue(flightDataRecord.Callsign, out val);
 
             return new CustomLabelItem()
             {
